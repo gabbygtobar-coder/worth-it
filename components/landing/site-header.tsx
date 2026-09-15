@@ -32,7 +32,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button
-            render={<Link href="/app" />}
+            render={<Link href="/login" />}
             nativeButton={false}
             variant="ghost"
             className="hidden sm:inline-flex"

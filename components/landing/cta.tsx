@@ -24,7 +24,7 @@ export function CtaSection() {
               <ArrowRight data-icon="inline-end" />
             </Button>
             <Button
-              render={<Link href="/app" />}
+              render={<Link href="/login" />}
               nativeButton={false}
               size="lg"
               variant="outline"

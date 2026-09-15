@@ -12,7 +12,7 @@ export function SiteFooter() {
           </p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground" aria-label="Footer">
-          <Link href="/app" className="hover:text-foreground">Dashboard</Link>
+          <Link href="/login" className="hover:text-foreground">Dashboard</Link>
           <Link href="/app/analyze" className="hover:text-foreground">Analyze</Link>
           <Link href="/app/calculators" className="hover:text-foreground">Calculators</Link>
           <Link href="/app/learn" className="hover:text-foreground">Learn</Link>

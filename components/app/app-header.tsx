@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { signOut } from '@/app/auth/actions'
 import { USER } from '@/lib/mock-data'
 
 const NOTIFICATIONS = [
@@ -122,10 +123,12 @@ export function AppHeader() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem render={<Link href="/" />}>
-                <LogOut />
-                Back to site
-              </DropdownMenuItem>
+              <form action={signOut}>
+                <DropdownMenuItem nativeButton={false} render={<button type="submit" />}>
+                  <LogOut />
+                  Log out
+                </DropdownMenuItem>
+              </form>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

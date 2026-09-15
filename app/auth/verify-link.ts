@@ -2,18 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type { AuthError, EmailOtpType } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { friendlyLinkError } from '@/lib/auth-errors'
-
-/**
- * Where an email link is allowed to drop the user. Anything else falls back to
- * /app, so a stale or foreign `next` in an email template can never land on a
- * route that does not exist.
- */
-const DESTINATIONS = new Set(['/app', '/reset-password'])
-
-function safeNext(value: string | null): string {
-  if (!value) return '/app'
-  return DESTINATIONS.has(value) ? value : '/app'
-}
+import { safeAuthLinkNext } from '@/lib/auth-redirect'
 
 /**
  * Records which branch an email link took, so a failing link can be diagnosed
@@ -32,7 +21,7 @@ function trace(path: string, detail: Record<string, string | boolean | null>) {
  */
 export async function handleAuthLink(request: NextRequest) {
   const { pathname, searchParams, origin } = new URL(request.url)
-  const next = safeNext(searchParams.get('next'))
+  const next = safeAuthLinkNext(searchParams.get('next'))
   const type = searchParams.get('type') as EmailOtpType | null
   const isRecovery = type === 'recovery' || next === '/reset-password'
 
