@@ -80,7 +80,7 @@ export interface WhatIfScenario {
 export interface AnalysisResult {
   title: string
   categoryId: CategoryId
-  /** Headline true cost shown at the top of the results screen. */
+  /** Headline figure shown at the top of the results screen. */
   trueCost: number
   /** Sticker / face-value price for comparison. */
   facePrice: number

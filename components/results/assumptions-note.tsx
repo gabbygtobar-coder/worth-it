@@ -14,7 +14,12 @@ export function AssumptionsNote() {
     {
       label: 'Inflation',
       value: formatPercent(ASSUMPTIONS.inflation),
-      note: "Used to express future money in today's purchasing power.",
+      note: 'Listed for reference. Category formulas currently use nominal dollars; the realValue helper is unused.',
+    },
+    {
+      label: 'Work year',
+      value: `${ASSUMPTIONS.workWeeksPerYear} × ${ASSUMPTIONS.weeklyWorkHours} hrs`,
+      note: 'Weekly commute and hours annualize over 50 work weeks (2,000 hours), not 52×40.',
     },
     {
       label: 'Work time',

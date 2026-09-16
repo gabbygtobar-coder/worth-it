@@ -20,7 +20,11 @@ export function defaultValues(category: FieldsOnly): FormValues {
 function coerce(field: FieldConfig, raw: string): number | string {
   if (field.type === 'text' || field.type === 'select') return raw
   const parsed = Number.parseFloat(raw)
-  return Number.isFinite(parsed) ? parsed : field.defaultValue
+  if (!Number.isFinite(parsed)) return field.defaultValue
+  const min = field.min ?? 0
+  let value = Math.max(min, parsed)
+  if (field.max !== undefined) value = Math.min(field.max, value)
+  return value
 }
 
 /**
