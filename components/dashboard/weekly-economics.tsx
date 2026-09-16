@@ -1,7 +1,15 @@
 'use client'
 
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   type ChartConfig,
   ChartContainer,
@@ -25,9 +33,13 @@ export function WeeklyEconomics() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Your economics this week</CardTitle>
+        <CardTitle className="text-base">Weekly economics</CardTitle>
+        <CardAction>
+          <Badge variant="outline">Sample</Badge>
+        </CardAction>
         <CardDescription>
-          {formatCurrency(totalSpent)} spent · {formatCurrency(totalSaved)} saved
+          Illustrative week, not this account. {formatCurrency(totalSpent)} spent ·{' '}
+          {formatCurrency(totalSaved)} saved
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -10,7 +10,7 @@ export function ScoreRing({
   size = 88,
   className,
 }: {
-  score: number
+  score?: number | null
   max?: number
   size?: number
   className?: string
@@ -18,14 +18,17 @@ export function ScoreRing({
   const stroke = 8
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
-  const pct = Math.max(0, Math.min(1, score / max))
+  const hasScore = typeof score === 'number'
+  const pct = hasScore ? Math.max(0, Math.min(1, score / max)) : 0
 
   return (
     <div
       className={cn('relative shrink-0', className)}
       style={{ width: size, height: size }}
       role="img"
-      aria-label={`Economic score ${score} out of ${max}`}
+      aria-label={
+        hasScore ? `Economic score ${score} out of ${max}` : 'Economic score not available'
+      }
     >
       <svg width={size} height={size} className="-rotate-90">
         <circle
@@ -49,8 +52,14 @@ export function ScoreRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-display text-xl font-semibold tabular leading-none">{score}</span>
-        <span className="mt-0.5 text-[0.625rem] text-muted-foreground">/ {max}</span>
+        <span className="font-display text-xl font-semibold tabular leading-none">
+          {hasScore ? score : '—'}
+        </span>
+        {hasScore ? (
+          <span className="mt-0.5 text-[0.625rem] text-muted-foreground">/ {max}</span>
+        ) : (
+          <span className="mt-0.5 text-[0.625rem] text-muted-foreground">n/a</span>
+        )}
       </div>
     </div>
   )

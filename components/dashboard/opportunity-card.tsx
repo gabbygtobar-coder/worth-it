@@ -2,8 +2,6 @@ import Link from 'next/link'
 import { ArrowRight, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BIGGEST_OPPORTUNITY } from '@/lib/mock-data'
-import { formatCurrency } from '@/lib/format'
 
 export function OpportunityCard() {
   return (
@@ -13,20 +11,21 @@ export function OpportunityCard() {
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/12 text-primary">
             <Target className="size-4" />
           </span>
-          <CardTitle className="text-base">Your biggest opportunity</CardTitle>
+          <CardTitle className="text-base">Biggest opportunity</CardTitle>
         </div>
         <CardDescription className="sr-only">
-          The highest-impact change available to you right now
+          Highest-impact change, once there is a saved analysis to highlight
         </CardDescription>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
         <div>
           <p className="font-display text-lg font-semibold tracking-tight text-balance">
-            {BIGGEST_OPPORTUNITY.title}
+            Nothing to highlight yet
           </p>
           <p className="mt-2 leading-relaxed text-muted-foreground text-pretty">
-            {BIGGEST_OPPORTUNITY.detail}
+            Analyze a recurring cost to see what redirecting it could be worth over time. This
+            space stays empty until there is a real decision to work from.
           </p>
         </div>
 
@@ -35,16 +34,16 @@ export function OpportunityCard() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               10-year impact
             </p>
-            <p className="mt-1 font-display text-3xl font-semibold tabular tracking-tight text-primary">
-              {formatCurrency(BIGGEST_OPPORTUNITY.impact)}
+            <p className="mt-1 font-display text-3xl font-semibold tabular tracking-tight text-muted-foreground">
+              —
             </p>
           </div>
           <Button
-            render={<Link href="/app/analyze/subscription" />}
+            render={<Link href="/app/analyze" />}
             nativeButton={false}
             size="sm"
           >
-            {BIGGEST_OPPORTUNITY.action}
+            Analyze a decision
             <ArrowRight data-icon="inline-end" />
           </Button>
         </div>

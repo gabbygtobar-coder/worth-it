@@ -18,7 +18,7 @@ export default function DecisionsPage() {
         <PageHeading
           eyebrow="History"
           title="My Decisions"
-          description="Everything you have run through the analyzer, with the verdict and true cost."
+          description="Analyses you save will show up here. Nothing is stored yet, so this list is empty."
         />
         <Button render={<Link href="/app/analyze" />}>
           <Plus data-icon="inline-start" />

@@ -1,12 +1,8 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { DecisionCard } from '@/components/decision-card'
 import { Button } from '@/components/ui/button'
-import { SAVED_DECISIONS } from '@/lib/mock-data'
 
 export function RecentDecisions() {
-  const recent = SAVED_DECISIONS.slice(0, 3)
-
   return (
     <section aria-labelledby="recent-heading" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
@@ -24,11 +20,13 @@ export function RecentDecisions() {
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {recent.map((d) => (
-          <DecisionCard key={d.id} decision={d} />
-        ))}
-      </div>
+      <p className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+        No saved decisions yet.{' '}
+        <Link href="/app/analyze" className="font-medium text-foreground underline-offset-4 hover:underline">
+          Analyze a decision
+        </Link>{' '}
+        to start a history.
+      </p>
     </section>
   )
 }

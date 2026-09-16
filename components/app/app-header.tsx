@@ -19,25 +19,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { signOut } from '@/app/auth/actions'
-import { USER } from '@/lib/mock-data'
-
-const NOTIFICATIONS = [
-  {
-    id: 'n1',
-    title: 'Your car analysis is 30 days old',
-    detail: 'Rates changed since then, so rerun it to see the new true cost.',
-  },
-  {
-    id: 'n2',
-    title: 'Streaming bundle renews Friday',
-    detail: 'You flagged this as borderline. Worth a second look.',
-  },
-  {
-    id: 'n3',
-    title: 'Savings rate up 3 points',
-    detail: 'You are now saving 27% of monthly income.',
-  },
-]
 
 export function AppHeader() {
   const router = useRouter()
@@ -73,24 +54,16 @@ export function AppHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button variant="ghost" size="icon" />}
-            aria-label={`Notifications (${NOTIFICATIONS.length} unread)`}
+            aria-label="Notifications"
           >
-            <span className="relative">
-              <Bell />
-              <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary ring-2 ring-background" />
-            </span>
+            <Bell />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              {NOTIFICATIONS.map((n) => (
-                <DropdownMenuItem key={n.id} className="flex-col items-start gap-1 py-2.5">
-                  <span className="text-sm font-medium leading-snug">{n.title}</span>
-                  <span className="text-xs leading-relaxed text-muted-foreground">{n.detail}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
+            <p className="px-2 py-8 text-center text-sm text-muted-foreground">
+              No notifications yet.
+            </p>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -100,16 +73,13 @@ export function AppHeader() {
             aria-label="Account menu"
           >
             <Avatar className="size-7">
-              <AvatarFallback className="text-xs">{USER.name.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="text-xs">
+                <User className="size-3.5" />
+              </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="flex flex-col gap-0.5">
-              <span>{USER.name}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                Economic score {USER.economicScore}/100
-              </span>
-            </DropdownMenuLabel>
+            <DropdownMenuLabel>Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem render={<Link href="/app/profile" />}>
