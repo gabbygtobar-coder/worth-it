@@ -1,44 +1,20 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { ScoreRing } from '@/components/app/score-ring'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { USER } from '@/lib/mock-data'
 
-const DRIVERS = [
-  { label: 'Savings rate', state: 'strong' as const },
-  { label: 'Debt load', state: 'strong' as const },
-  { label: 'Fixed costs', state: 'watch' as const },
-]
-
-export function ScoreCard({ greeting }: { greeting: string }) {
+export function ScoreCard({ greeting, name }: { greeting: string; name?: string }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-6 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-            {greeting}, {USER.name}
+            {name ? `${greeting}, ${name}` : greeting}
           </h2>
           <p className="mt-1.5 leading-relaxed text-muted-foreground">
-            Your economic score is holding steady. Fixed costs are the one thing worth trimming.
+            Run an analysis to see the true cost of a decision. Your score will
+            show up here once there is data to base it on.
           </p>
-
-          <ul className="mt-4 flex flex-wrap gap-2">
-            {DRIVERS.map((d) => (
-              <li
-                key={d.label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground"
-              >
-                <span
-                  className={
-                    d.state === 'strong' ? 'size-1.5 rounded-full bg-worth' : 'size-1.5 rounded-full bg-consider'
-                  }
-                  aria-hidden
-                />
-                {d.label}
-              </li>
-            ))}
-          </ul>
 
           <Button
             render={<Link href="/app/analyze" />}
@@ -52,10 +28,18 @@ export function ScoreCard({ greeting }: { greeting: string }) {
         </div>
 
         <div className="flex items-center gap-4 sm:flex-col sm:gap-2">
-          <ScoreRing score={USER.economicScore} />
+          <div
+            className="flex size-[88px] shrink-0 items-center justify-center rounded-full border border-dashed border-border"
+            role="img"
+            aria-label="Economic score not available yet"
+          >
+            <span className="font-display text-xl font-semibold tabular text-muted-foreground">
+              —
+            </span>
+          </div>
           <div className="sm:text-center">
             <p className="text-sm font-medium">Economic Score</p>
-            <p className="text-xs text-muted-foreground">Top 18% of your age group</p>
+            <p className="text-xs text-muted-foreground">Not available yet</p>
           </div>
         </div>
       </CardContent>

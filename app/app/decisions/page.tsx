@@ -4,11 +4,10 @@ import { Plus } from 'lucide-react'
 import { PageHeading } from '@/components/app/page-heading'
 import { DecisionList } from '@/components/decisions/decision-list'
 import { Button } from '@/components/ui/button'
-import { SAVED_DECISIONS } from '@/lib/mock-data'
 
 export const metadata: Metadata = {
   title: 'My Decisions',
-  description: 'Every decision you have analyzed, with its true cost and verdict.',
+  description: 'Saved analyses will appear here.',
 }
 
 export default function DecisionsPage() {
@@ -18,7 +17,7 @@ export default function DecisionsPage() {
         <PageHeading
           eyebrow="History"
           title="My Decisions"
-          description="Everything you have run through the analyzer, with the verdict and true cost."
+          description="Saved analyses will appear here. Nothing is stored for this account yet."
         />
         <Button render={<Link href="/app/analyze" />}>
           <Plus data-icon="inline-start" />
@@ -26,7 +25,7 @@ export default function DecisionsPage() {
         </Button>
       </div>
 
-      <DecisionList decisions={SAVED_DECISIONS} />
+      <DecisionList decisions={[]} />
     </div>
   )
 }
