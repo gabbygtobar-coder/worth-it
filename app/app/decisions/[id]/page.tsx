@@ -3,16 +3,15 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, RefreshCw } from 'lucide-react'
 import { PageHeading } from '@/components/app/page-heading'
+import { DeleteDecisionButton } from '@/components/decisions/delete-decision-button'
 import { ShareableCard } from '@/components/decisions/shareable-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CATEGORY_MAP } from '@/lib/categories'
+import { getSavedDecision } from '@/lib/decisions'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { SAVED_DECISIONS } from '@/lib/mock-data'
 
-export function generateStaticParams() {
-  return SAVED_DECISIONS.map((d) => ({ id: d.id }))
-}
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({
   params,
@@ -20,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
-  const decision = SAVED_DECISIONS.find((d) => d.id === id)
+  const { decision } = await getSavedDecision(id)
   if (!decision) return { title: 'Decision' }
   return { title: decision.title, description: decision.summary }
 }
@@ -31,7 +30,28 @@ export default async function DecisionDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const decision = SAVED_DECISIONS.find((d) => d.id === id)
+  const { decision, error } = await getSavedDecision(id)
+
+  if (error) {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+        <Link
+          href="/app/decisions"
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          My Decisions
+        </Link>
+        <p
+          className="rounded-xl border border-dashed border-destructive/40 py-12 text-center text-sm text-destructive"
+          role="alert"
+        >
+          {error}
+        </p>
+      </div>
+    )
+  }
+
   if (!decision) notFound()
 
   const category = CATEGORY_MAP[decision.categoryId]
@@ -53,13 +73,16 @@ export default async function DecisionDetailPage({
             title={decision.title}
             description={decision.summary}
           />
-          <Button
-            variant="outline"
-            render={<Link href={`/app/analyze/${decision.categoryId}`} />}
-          >
-            <RefreshCw data-icon="inline-start" />
-            Re-run analysis
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              render={<Link href={`/app/analyze/${decision.categoryId}`} />}
+            >
+              <RefreshCw data-icon="inline-start" />
+              Re-run analysis
+            </Button>
+            <DeleteDecisionButton id={decision.id} />
+          </div>
         </div>
       </div>
 

@@ -9,8 +9,11 @@ import { CostBreakdown } from '@/components/results/cost-breakdown'
 import { InsightList } from '@/components/results/insight-list'
 import { WhatIfList } from '@/components/results/what-if-list'
 import { AssumptionsNote } from '@/components/results/assumptions-note'
+import { SaveDecisionButton } from '@/components/results/save-decision-button'
 import { getCategory } from '@/lib/categories'
 import { valuesFromParams } from '@/lib/decision-params'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { getUser } from '@/lib/supabase/server'
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
@@ -32,6 +35,7 @@ export default async function ResultPage({
 
   const values = valuesFromParams(config, await searchParams)
   const result = config.analyze(values)
+  const user = isSupabaseConfigured ? await getUser() : null
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
@@ -43,10 +47,13 @@ export default async function ResultPage({
           <ArrowLeft className="size-4" aria-hidden="true" />
           Edit inputs
         </Link>
-        <Button variant="outline" size="sm" render={<Link href="/app/analyze" />}>
-          <RotateCcw data-icon="inline-start" />
-          New analysis
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <SaveDecisionButton signedIn={Boolean(user)} categoryId={config.id} values={values} />
+          <Button variant="outline" size="sm" render={<Link href="/app/analyze" />}>
+            <RotateCcw data-icon="inline-start" />
+            New analysis
+          </Button>
+        </div>
       </div>
 
       <VerdictHero result={result} />
