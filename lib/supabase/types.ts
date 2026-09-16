@@ -2,7 +2,7 @@ import type { CategoryId, Verdict } from '@/lib/types'
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export interface ProfileRow {
+export type ProfileRow = {
   id: string
   display_name: string | null
   hourly_income: number | null
@@ -17,7 +17,7 @@ export interface ProfileRow {
   updated_at: string
 }
 
-export interface DecisionRow {
+export type DecisionRow = {
   id: string
   user_id: string
   category_id: CategoryId
@@ -39,13 +39,14 @@ export interface DecisionRow {
 /** Columns the database fills in for us. */
 type Generated = 'id' | 'created_at' | 'updated_at'
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
         Row: ProfileRow
         Insert: Partial<Omit<ProfileRow, 'id' | 'created_at' | 'updated_at'>> & { id: string }
         Update: Partial<Omit<ProfileRow, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: []
       }
       decisions: {
         Row: DecisionRow
@@ -55,10 +56,15 @@ export interface Database {
           share_token?: string | null
         }
         Update: Partial<Omit<DecisionRow, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+        Relationships: []
       }
     }
-    Views: Record<never, never>
-    Functions: Record<never, never>
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
     Enums: {
       decision_category: CategoryId
       decision_verdict: Verdict

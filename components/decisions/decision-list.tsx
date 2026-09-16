@@ -32,7 +32,8 @@ export function DecisionList({ decisions }: { decisions: SavedDecision[] }) {
   if (decisions.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-        No saved decisions yet. Analyze a decision to start a history.
+        No saved decisions yet. Analyze a decision and save the result to start a
+        history.
       </p>
     )
   }

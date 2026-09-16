@@ -1,8 +1,3 @@
-import type { SavedDecision } from './types'
-
-/** Saved analyses are not persisted yet, so the signed-in history is empty. */
-export const SAVED_DECISIONS: SavedDecision[] = []
-
 /** Sample daily activity for the dashboard chart. Not this user's spending. */
 export const WEEKLY_ACTIVITY = [
   { day: 'Mon', spending: 42, saved: 18 },
