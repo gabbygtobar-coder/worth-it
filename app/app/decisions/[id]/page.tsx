@@ -49,7 +49,7 @@ export default async function DecisionDetailPage({
         </Link>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <PageHeading
-            eyebrow={`${category.label} · ${formatDate(decision.date)}`}
+            eyebrow={`Sample · ${category.label} · ${formatDate(decision.date)}`}
             title={decision.title}
             description={decision.summary}
           />

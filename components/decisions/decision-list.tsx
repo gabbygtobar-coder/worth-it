@@ -73,7 +73,9 @@ export function DecisionList({ decisions }: { decisions: SavedDecision[] }) {
 
       {visible.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-          No decisions match that filter.
+          {decisions.length === 0
+            ? 'No saved decisions yet.'
+            : 'No decisions match that filter.'}
         </p>
       ) : (
         <>

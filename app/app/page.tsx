@@ -3,6 +3,8 @@ import { OpportunityCard } from '@/components/dashboard/opportunity-card'
 import { RecentDecisions } from '@/components/dashboard/recent-decisions'
 import { ScoreCard } from '@/components/dashboard/score-card'
 import { WeeklyEconomics } from '@/components/dashboard/weekly-economics'
+import { getAccountUser } from '@/lib/account'
+import { accountFirstName, accountLabel } from '@/lib/account-label'
 
 /** The greeting depends on request time, so this page can't be prerendered. */
 export const dynamic = 'force-dynamic'
@@ -18,10 +20,13 @@ function getGreeting(): string {
   return 'Good evening'
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await getAccountUser()
+  const name = user ? accountFirstName(accountLabel(user)) : undefined
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <ScoreCard greeting={getGreeting()} />
+      <ScoreCard greeting={getGreeting()} name={name} />
       <FinancialSnapshot />
 
       <div className="grid gap-4 lg:grid-cols-2">

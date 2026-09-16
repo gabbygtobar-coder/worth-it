@@ -18,28 +18,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { signOut } from '@/app/auth/actions'
-import { USER } from '@/lib/mock-data'
+import { accountInitial } from '@/lib/account-label'
 
-const NOTIFICATIONS = [
-  {
-    id: 'n1',
-    title: 'Your car analysis is 30 days old',
-    detail: 'Rates changed since then, so rerun it to see the new true cost.',
-  },
-  {
-    id: 'n2',
-    title: 'Streaming bundle renews Friday',
-    detail: 'You flagged this as borderline. Worth a second look.',
-  },
-  {
-    id: 'n3',
-    title: 'Savings rate up 3 points',
-    detail: 'You are now saving 27% of monthly income.',
-  },
-]
-
-export function AppHeader() {
+export function AppHeader({
+  accountName,
+  accountEmail,
+  signedIn,
+}: {
+  accountName: string
+  accountEmail?: string
+  signedIn: boolean
+}) {
   const router = useRouter()
   const [query, setQuery] = useState('')
 
@@ -73,24 +62,16 @@ export function AppHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<Button variant="ghost" size="icon" />}
-            aria-label={`Notifications (${NOTIFICATIONS.length} unread)`}
+            aria-label="Notifications"
           >
-            <span className="relative">
-              <Bell />
-              <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary ring-2 ring-background" />
-            </span>
+            <Bell />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              {NOTIFICATIONS.map((n) => (
-                <DropdownMenuItem key={n.id} className="flex-col items-start gap-1 py-2.5">
-                  <span className="text-sm font-medium leading-snug">{n.title}</span>
-                  <span className="text-xs leading-relaxed text-muted-foreground">{n.detail}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
+            <p className="px-1.5 py-6 text-center text-sm text-muted-foreground">
+              No notifications yet.
+            </p>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -100,14 +81,14 @@ export function AppHeader() {
             aria-label="Account menu"
           >
             <Avatar className="size-7">
-              <AvatarFallback className="text-xs">{USER.name.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="text-xs">{accountInitial(accountName)}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="flex flex-col gap-0.5">
-              <span>{USER.name}</span>
+              <span className="text-foreground">{accountName}</span>
               <span className="text-xs font-normal text-muted-foreground">
-                Economic score {USER.economicScore}/100
+                {signedIn ? accountEmail || 'Signed in' : 'Not signed in'}
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -123,12 +104,10 @@ export function AppHeader() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <form action={signOut}>
-                <DropdownMenuItem nativeButton={false} render={<button type="submit" />}>
-                  <LogOut />
-                  Log out
-                </DropdownMenuItem>
-              </form>
+              <DropdownMenuItem render={<Link href="/" />}>
+                <LogOut />
+                Back to site
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

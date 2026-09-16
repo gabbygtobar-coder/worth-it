@@ -10,6 +10,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart'
+import { Badge } from '@/components/ui/badge'
 import { WEEKLY_ACTIVITY } from '@/lib/mock-data'
 import { formatCurrency } from '@/lib/format'
 
@@ -25,9 +26,13 @@ export function WeeklyEconomics() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Your economics this week</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base">Weekly economics</CardTitle>
+          <Badge variant="outline">Sample</Badge>
+        </div>
         <CardDescription>
-          {formatCurrency(totalSpent)} spent · {formatCurrency(totalSaved)} saved
+          Illustrative week · {formatCurrency(totalSpent)} spent ·{' '}
+          {formatCurrency(totalSaved)} saved
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -1,21 +1,21 @@
 import { PageHeading } from '@/components/app/page-heading'
-import { ScoreRing } from '@/components/app/score-ring'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { USER } from '@/lib/mock-data'
-import { formatCurrency, formatPercent } from '@/lib/format'
+import { getAccountUser } from '@/lib/account'
+import { accountInitial, accountLabel } from '@/lib/account-label'
 
-/** Defaults the analyzer pre-fills so users don't retype them every time. */
-const ASSUMPTIONS = [
+/** Sample analyzer starting values — not this signed-in user's finances. */
+const SAMPLE_ASSUMPTIONS = [
   {
     label: 'Hourly income',
-    value: formatCurrency(USER.hourlyIncome),
+    value: '$28',
     help: 'Used to convert costs into work hours.',
   },
   {
     label: 'Current savings',
-    value: formatCurrency(USER.currentSavings),
+    value: '$6,500',
     help: 'Compared against purchases to judge affordability.',
   },
   {
@@ -30,49 +30,46 @@ const ASSUMPTIONS = [
   },
 ]
 
-const PROFILE_STATS = [
-  { label: 'Monthly income', value: formatCurrency(USER.monthlyIncome) },
-  { label: 'Monthly spending', value: formatCurrency(USER.monthlySpending) },
-  { label: 'Savings rate', value: formatPercent(USER.savingsRate) },
-  { label: 'Net worth', value: formatCurrency(USER.netWorth) },
-]
+const PROFILE_STATS = ['Monthly income', 'Monthly spending', 'Savings rate', 'Net worth']
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const user = await getAccountUser()
+  const name = accountLabel(user)
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <PageHeading
         title="Profile"
-        description="The numbers WorthIt uses as a starting point for every analysis."
+        description="Account details and the sample defaults the analyzer can pre-fill."
       />
 
       <Card>
         <CardContent className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
           <Avatar className="size-16">
             <AvatarFallback className="font-display text-xl">
-              {USER.name.charAt(0)}
+              {accountInitial(name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-xl font-semibold tracking-tight">{USER.name}</h2>
+            <h2 className="font-display text-xl font-semibold tracking-tight">{name}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Building better financial instincts, one decision at a time.
+              {user?.email ?? 'Signed in'}
             </p>
           </div>
-          <ScoreRing score={USER.economicScore} size={76} />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Financial snapshot</CardTitle>
-          <CardDescription>A summary of where you stand today.</CardDescription>
+          <CardDescription>No saved figures for this account yet.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PROFILE_STATS.map((s) => (
-            <div key={s.label}>
-              <p className="text-sm text-muted-foreground">{s.label}</p>
-              <p className="mt-1 font-display text-xl font-semibold tabular tracking-tight">
-                {s.value}
+          {PROFILE_STATS.map((label) => (
+            <div key={label}>
+              <p className="text-sm text-muted-foreground">{label}</p>
+              <p className="mt-1 font-display text-xl font-semibold tabular tracking-tight text-muted-foreground">
+                —
               </p>
             </div>
           ))}
@@ -81,13 +78,16 @@ export default function ProfilePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Default assumptions</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">Default assumptions</CardTitle>
+            <Badge variant="outline">Sample</Badge>
+          </div>
           <CardDescription>
-            Every analysis starts from these. You can override them per decision.
+            Starting values the analyzer pre-fills. They are not your saved profile.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col">
-          {ASSUMPTIONS.map((a, i) => (
+          {SAMPLE_ASSUMPTIONS.map((a, i) => (
             <div key={a.label} className="flex flex-col">
               {i > 0 && <Separator className="my-4" />}
               <div className="flex items-start justify-between gap-4">
