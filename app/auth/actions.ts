@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { siteUrl } from '@/lib/supabase/env'
+import { isSupabaseConfigured, siteUrl } from '@/lib/supabase/env'
+import { safeNext } from '@/lib/auth-redirect'
 import { friendlyAuthError, isRateLimit, retryAfterSeconds } from '@/lib/auth-errors'
 import {
   validateEmail,
@@ -37,7 +38,7 @@ export async function signIn(
   }
 
   revalidatePath('/', 'layout')
-  redirect('/app')
+  redirect(safeNext(String(formData.get('next') ?? '')))
 }
 
 export async function signUp(
@@ -76,12 +77,14 @@ export async function signUp(
     redirect(`/verify-email?email=${encodeURIComponent(email)}`)
   }
 
-  redirect('/app')
+  redirect(safeNext(String(formData.get('next') ?? '')))
 }
 
 export async function signOut(): Promise<void> {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
+  if (isSupabaseConfigured) {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+  }
   revalidatePath('/', 'layout')
   redirect('/login')
 }

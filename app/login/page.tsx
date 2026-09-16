@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AuthShell } from '@/components/auth/auth-shell'
 import { LoginForm } from '@/app/login/login-form'
 import { signOut } from '@/app/auth/actions'
+import { safeNext } from '@/lib/auth-redirect'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { getUser } from '@/lib/supabase/server'
 
@@ -16,9 +17,10 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; next?: string }>
 }) {
-  const { error } = await searchParams
+  const { error, next: nextParam } = await searchParams
+  const next = safeNext(nextParam)
   const user = isSupabaseConfigured ? await getUser() : null
 
   return (
@@ -45,7 +47,7 @@ export default async function LoginPage({
             <CardDescription className="break-words">{user.email}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2">
-            <Button render={<Link href="/app" />} nativeButton={false}>
+            <Button render={<Link href={next} />} nativeButton={false}>
               Go to WorthIt
             </Button>
             <form action={signOut}>
@@ -65,7 +67,7 @@ export default async function LoginPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <LoginForm initialError={error} />
+            <LoginForm initialError={error} next={next} />
           </CardContent>
         </Card>
       )}

@@ -17,14 +17,18 @@ import { MIN_PASSWORD_LENGTH, type AuthFormState } from '@/lib/auth-forms'
 
 const EMPTY: AuthFormState = {}
 
-export function LoginForm({ initialError }: { initialError?: string }) {
+export function LoginForm({ initialError, next }: { initialError?: string; next: string }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const isSignUp = mode === 'signup'
 
   return (
     <div className="flex flex-col gap-5">
       {/* Keyed so switching modes starts from a clean form and clears errors. */}
-      {isSignUp ? <SignUpForm key="signup" /> : <SignInForm key="signin" initialError={initialError} />}
+      {isSignUp ? (
+        <SignUpForm key="signup" next={next} />
+      ) : (
+        <SignInForm key="signin" initialError={initialError} next={next} />
+      )}
 
       <p className="text-sm text-muted-foreground">
         {isSignUp ? 'Already have an account?' : 'New to WorthIt?'}{' '}
@@ -40,7 +44,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
   )
 }
 
-function SignInForm({ initialError }: { initialError?: string }) {
+function SignInForm({ initialError, next }: { initialError?: string; next: string }) {
   const [state, formAction, pending] = useActionState(signIn, EMPTY)
   // Held locally so a failed submit never wipes what was typed.
   const [email, setEmail] = useState('')
@@ -52,6 +56,7 @@ function SignInForm({ initialError }: { initialError?: string }) {
     // noValidate so problems are reported with our own field messages instead
     // of the browser's tooltip.
     <form action={formAction} noValidate className="flex flex-col gap-5">
+      <input type="hidden" name="next" value={next} />
       <FieldGroup>
         <Field data-invalid={Boolean(state.fieldErrors?.email)}>
           <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -102,7 +107,7 @@ function SignInForm({ initialError }: { initialError?: string }) {
   )
 }
 
-function SignUpForm() {
+function SignUpForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(signUp, EMPTY)
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -110,6 +115,7 @@ function SignUpForm() {
 
   return (
     <form action={formAction} noValidate className="flex flex-col gap-5">
+      <input type="hidden" name="next" value={next} />
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="displayName">
