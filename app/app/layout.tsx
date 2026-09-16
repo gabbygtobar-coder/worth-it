@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   description: 'Analyze the true economic cost of your everyday financial decisions.',
 }
 
+/** Session-aware header/greeting; do not prerender a fake guest account. */
+export const dynamic = 'force-dynamic'
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getAccountUser()
   const name = accountLabel(user)
