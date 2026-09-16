@@ -3,20 +3,18 @@ import { ScoreRing } from '@/components/app/score-ring'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { USER } from '@/lib/mock-data'
-import { formatCurrency, formatPercent } from '@/lib/format'
 
-/** Defaults the analyzer pre-fills so users don't retype them every time. */
+/** Product-wide calculation defaults. Not a saved picture of this user. */
 const ASSUMPTIONS = [
   {
     label: 'Hourly income',
-    value: formatCurrency(USER.hourlyIncome),
-    help: 'Used to convert costs into work hours.',
+    value: 'Set per analysis',
+    help: 'Used to convert costs into work hours. Entered on each decision form.',
   },
   {
     label: 'Current savings',
-    value: formatCurrency(USER.currentSavings),
-    help: 'Compared against purchases to judge affordability.',
+    value: 'Set per analysis',
+    help: 'Compared against purchases to judge affordability. Entered on each decision form.',
   },
   {
     label: 'Expected market return',
@@ -31,10 +29,10 @@ const ASSUMPTIONS = [
 ]
 
 const PROFILE_STATS = [
-  { label: 'Monthly income', value: formatCurrency(USER.monthlyIncome) },
-  { label: 'Monthly spending', value: formatCurrency(USER.monthlySpending) },
-  { label: 'Savings rate', value: formatPercent(USER.savingsRate) },
-  { label: 'Net worth', value: formatCurrency(USER.netWorth) },
+  { label: 'Monthly income' },
+  { label: 'Monthly spending' },
+  { label: 'Savings rate' },
+  { label: 'Net worth' },
 ]
 
 export default function ProfilePage() {
@@ -42,38 +40,34 @@ export default function ProfilePage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <PageHeading
         title="Profile"
-        description="The numbers WorthIt uses as a starting point for every analysis."
+        description="Starting points for the analyzer. These are not a saved picture of your finances."
       />
 
       <Card>
         <CardContent className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
           <Avatar className="size-16">
-            <AvatarFallback className="font-display text-xl">
-              {USER.name.charAt(0)}
-            </AvatarFallback>
+            <AvatarFallback className="font-display text-xl">A</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-xl font-semibold tracking-tight">{USER.name}</h2>
+            <h2 className="font-display text-xl font-semibold tracking-tight">Account</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Building better financial instincts, one decision at a time.
+              No personal totals or economic score are stored yet.
             </p>
           </div>
-          <ScoreRing score={USER.economicScore} size={76} />
+          <ScoreRing size={76} />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Financial snapshot</CardTitle>
-          <CardDescription>A summary of where you stand today.</CardDescription>
+          <CardDescription>No personal totals yet.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PROFILE_STATS.map((s) => (
             <div key={s.label}>
               <p className="text-sm text-muted-foreground">{s.label}</p>
-              <p className="mt-1 font-display text-xl font-semibold tabular tracking-tight">
-                {s.value}
-              </p>
+              <p className="mt-1 font-display text-xl font-semibold tabular tracking-tight">—</p>
             </div>
           ))}
         </CardContent>
@@ -83,7 +77,7 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="text-base">Default assumptions</CardTitle>
           <CardDescription>
-            Every analysis starts from these. You can override them per decision.
+            Product-wide starting points. Override them on each decision.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col">

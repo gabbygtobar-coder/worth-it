@@ -29,6 +29,14 @@ export function DecisionList({ decisions }: { decisions: SavedDecision[] }) {
     })
   }, [decisions, query, verdict])
 
+  if (decisions.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+        No saved decisions yet. Analyze a decision to start a history.
+      </p>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
