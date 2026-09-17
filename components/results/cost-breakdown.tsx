@@ -15,7 +15,10 @@ export function CostBreakdown({
   total: number
 }) {
   const segments = breakdown.filter((s) => s.amount > 0)
-  const sum = segments.reduce((acc, s) => acc + s.amount, 0) || 1
+  const sum = segments.reduce((acc, s) => acc + s.amount, 0)
+  const matchesHeadline = Math.abs(sum - total) <= 1
+  const footerTotal = matchesHeadline ? total : sum
+  const pctBase = sum || 1
 
   // Colors already live on each segment as `var(--chart-N)`; the config only
   // needs to supply the labels the tooltip renders.
@@ -28,7 +31,9 @@ export function CostBreakdown({
       <CardHeader>
         <CardTitle>Where the money goes</CardTitle>
         <CardDescription>
-          Every component of the true cost, including the parts no price tag shows.
+          {matchesHeadline
+            ? 'Every component of the true cost, including the parts no price tag shows.'
+            : 'The moving parts of this decision. Percentages are of this breakdown, not the headline figure.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
@@ -84,15 +89,15 @@ export function CostBreakdown({
                   {formatCurrency(segment.amount)}
                 </span>
                 <span className="w-9 text-right text-xs text-muted-foreground tabular">
-                  {Math.round((segment.amount / sum) * 100)}%
+                  {Math.round((segment.amount / pctBase) * 100)}%
                 </span>
               </span>
             </li>
           ))}
           <li className="flex items-center justify-between gap-4 border-t border-border pt-3">
-            <span className="text-sm font-medium">Total</span>
+            <span className="text-sm font-medium">{matchesHeadline ? 'Total' : 'Breakdown total'}</span>
             <span className="font-display text-base font-semibold tabular">
-              {formatCurrency(total)}
+              {formatCurrency(footerTotal)}
             </span>
           </li>
         </ul>

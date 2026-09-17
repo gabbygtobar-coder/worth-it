@@ -4,8 +4,14 @@ import type { Verdict } from './types'
 export const ASSUMPTIONS = {
   /** Expected annual real return of a diversified index fund. */
   investmentReturn: 0.07,
-  /** Long-run average annual inflation. */
+  /**
+   * Long-run average annual inflation. Used by `realValue()` only; category
+   * analyzers currently report nominal dollars and do not inflate or deflate.
+   */
   inflation: 0.03,
+  /** Paid weeks used to annualize weekly commute and work hours (not 52). */
+  workWeeksPerYear: 50,
+  weeklyWorkHours: 40,
 }
 
 /** Future value of a lump sum compounding annually. */
@@ -57,6 +63,68 @@ export function totalLoanInterest(
   termMonths: number,
 ): number {
   return monthlyLoanPayment(principal, annualRate, termMonths) * termMonths - principal
+}
+
+export interface PayoffProjection {
+  /** Months to pay off, or `Infinity` if the payment never amortizes. */
+  months: number
+  interest: number
+  totalPaid: number
+  remaining: number
+  paysOff: boolean
+}
+
+const PAYOFF_HORIZON_MONTHS = 600
+
+/**
+ * Simulate minimum payments on a balance. Unlike `totalLoanInterest`, this
+ * uses the actual payment (not a calculated amortizing payment) and reports
+ * when the loan never pays off.
+ */
+export function payoffProjection(
+  balance: number,
+  annualRate: number,
+  payment: number,
+  maxMonths = PAYOFF_HORIZON_MONTHS,
+): PayoffProjection {
+  if (balance <= 0) {
+    return { months: 0, interest: 0, totalPaid: 0, remaining: 0, paysOff: true }
+  }
+  const r = annualRate / 12
+  if (payment <= 0) {
+    const remaining = r <= 0 ? balance : balance * Math.pow(1 + r, maxMonths)
+    return {
+      months: Infinity,
+      interest: Math.max(0, remaining - balance),
+      totalPaid: 0,
+      remaining,
+      paysOff: false,
+    }
+  }
+
+  let remaining = balance
+  let months = 0
+  let interest = 0
+  let totalPaid = 0
+
+  while (remaining > 0.005 && months < maxMonths) {
+    const interestThisMonth = remaining * r
+    const due = remaining + interestThisMonth
+    const paid = Math.min(payment, due)
+    interest += interestThisMonth
+    remaining = due - paid
+    totalPaid += paid
+    months++
+  }
+
+  const paysOff = remaining <= 0.005
+  return {
+    months: paysOff ? months : Infinity,
+    interest,
+    totalPaid,
+    remaining: paysOff ? 0 : Math.max(0, remaining),
+    paysOff,
+  }
 }
 
 /** Value remaining after declining-balance depreciation. */

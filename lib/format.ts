@@ -1,4 +1,5 @@
 export function formatCurrency(amount: number, opts?: { cents?: boolean }): string {
+  if (!Number.isFinite(amount)) return 'n/a'
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',

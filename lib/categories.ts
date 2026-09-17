@@ -8,11 +8,10 @@ import type {
 import {
   ASSUMPTIONS,
   annualizedCost,
-  breakEvenMonths,
   clamp,
   depreciatedValue,
-  monthlyLoanPayment,
   opportunityCost,
+  payoffProjection,
   totalLoanInterest,
   verdictFromScore,
   workHours,
@@ -26,10 +25,15 @@ const COLORS = {
   other: 'var(--chart-5)',
 }
 
-/** Coerce a raw form value to a number. */
+/** Coerce a raw form value to a non-negative finite number. */
 function n(v: number | string | undefined): number {
   const parsed = typeof v === 'string' ? Number.parseFloat(v) : v ?? 0
-  return Number.isFinite(parsed) ? (parsed as number) : 0
+  if (!Number.isFinite(parsed)) return 0
+  return Math.max(0, parsed)
+}
+
+function yrs(v: number | string | undefined, min = 1, max = 80): number {
+  return Math.min(max, Math.max(min, n(v)))
 }
 
 function s(v: number | string | undefined, fallback = ''): string {
@@ -37,7 +41,18 @@ function s(v: number | string | undefined, fallback = ''): string {
 }
 
 function seg(key: string, label: string, amount: number, color: string): BreakdownSegment {
-  return { key, label, amount: Math.max(0, Math.round(amount)), color }
+  const safe = Number.isFinite(amount) ? Math.max(0, Math.round(amount)) : 0
+  return { key, label, amount: safe, color }
+}
+
+function segmentSum(segments: BreakdownSegment[]): number {
+  return segments.reduce((acc, s) => acc + s.amount, 0)
+}
+
+function formatPaybackYears(years: number): string {
+  if (!Number.isFinite(years) || years < 0) return 'never'
+  if (years > 100) return 'over 100 years'
+  return `${years.toFixed(1)} years`
 }
 
 // ---------------------------------------------------------------------------
@@ -56,7 +71,7 @@ const purchase: CategoryConfig = {
   ],
   fields: [
     { id: 'item', label: 'Item', type: 'text', step: 1, group: 0, defaultValue: 'MacBook Air', placeholder: 'e.g. MacBook Air' },
-    { id: 'price', label: 'Price', type: 'currency', step: 50, group: 0, defaultValue: 1099 },
+    { id: 'price', label: 'Price', type: 'currency', step: 50, group: 0, defaultValue: 1099, min: 0 },
     {
       id: 'frequency', label: 'Payment', type: 'select', step: 1, group: 0, defaultValue: 'once',
       options: [
@@ -73,7 +88,7 @@ const purchase: CategoryConfig = {
   buildTitle: (v) => `Should I buy this ${s(v.item, 'item')}?`,
   analyze: (v) => {
     const price = n(v.price)
-    const life = Math.max(1, n(v.usefulLife))
+    const life = yrs(v.usefulLife)
     const hourly = n(v.hourlyIncome)
     const savings = n(v.currentSavings)
     const freq = s(v.frequency, 'once')
@@ -159,7 +174,7 @@ const car: CategoryConfig = {
     { id: 'down', label: 'Down payment', type: 'currency', step: 500, group: 0, defaultValue: 4000 },
     { id: 'rate', label: 'Loan APR', type: 'percent', step: 0.5, group: 0, defaultValue: 7, suffix: '%' },
     { id: 'term', label: 'Loan term', type: 'number', step: 6, group: 0, defaultValue: 60, suffix: 'months' },
-    { id: 'depreciation', label: 'Annual depreciation', type: 'percent', step: 1, group: 1, defaultValue: 15, suffix: '%', help: 'New cars lose ~15–20% a year.' },
+    { id: 'depreciation', label: 'Annual depreciation', type: 'percent', step: 1, group: 1, defaultValue: 15, suffix: '%', min: 0, max: 99, help: 'New cars lose ~15–20% a year.' },
     { id: 'operatingMonthly', label: 'Insurance, fuel & upkeep', type: 'currency', step: 25, group: 1, defaultValue: 340, suffix: '/mo' },
     { id: 'ownYears', label: 'Years you\'ll own it', type: 'number', step: 1, group: 1, defaultValue: 5, suffix: 'years' },
     { id: 'hourlyIncome', label: 'Your hourly income', type: 'currency', step: 1, group: 2, defaultValue: 32 },
@@ -169,10 +184,10 @@ const car: CategoryConfig = {
     const price = n(v.price)
     const down = Math.min(n(v.down), price)
     const rate = n(v.rate) / 100
-    const term = Math.max(1, n(v.term))
-    const dep = n(v.depreciation) / 100
+    const term = yrs(v.term, 1, 360)
+    const dep = Math.min(0.99, n(v.depreciation) / 100)
     const opMonthly = n(v.operatingMonthly)
-    const years = Math.max(1, n(v.ownYears))
+    const years = yrs(v.ownYears)
     const hourly = n(v.hourlyIncome)
 
     const loan = Math.max(0, price - down)
@@ -255,7 +270,7 @@ const housing: CategoryConfig = {
     const rent = n(v.rent)
     const utilities = n(v.utilities)
     const upfront = n(v.upfront)
-    const lease = Math.max(1, n(v.leaseMonths))
+    const lease = yrs(v.leaseMonths, 1, 60)
     const income = Math.max(1, n(v.monthlyIncome))
 
     const monthlyTotal = rent + utilities
@@ -320,45 +335,58 @@ const debt: CategoryConfig = {
   ],
   fields: [
     { id: 'item', label: 'Debt', type: 'text', step: 1, group: 0, defaultValue: 'Credit card', placeholder: 'e.g. Student loan' },
-    { id: 'balance', label: 'Balance', type: 'currency', step: 100, group: 0, defaultValue: 5200 },
-    { id: 'apr', label: 'Interest rate (APR)', type: 'percent', step: 0.5, group: 0, defaultValue: 22, suffix: '%' },
-    { id: 'availableCash', label: 'Cash you could use', type: 'currency', step: 100, group: 1, defaultValue: 5200 },
-    { id: 'minPayment', label: 'Minimum monthly payment', type: 'currency', step: 10, group: 1, defaultValue: 130 },
+    { id: 'balance', label: 'Balance', type: 'currency', step: 100, group: 0, defaultValue: 5200, min: 0 },
+    { id: 'apr', label: 'Interest rate (APR)', type: 'percent', step: 0.5, group: 0, defaultValue: 22, suffix: '%', min: 0, max: 100 },
+    { id: 'availableCash', label: 'Cash you could use', type: 'currency', step: 100, group: 1, defaultValue: 5200, min: 0 },
+    { id: 'minPayment', label: 'Minimum monthly payment', type: 'currency', step: 10, group: 1, defaultValue: 130, min: 0 },
   ],
   buildTitle: (v) => `Should I pay off my ${s(v.item, 'debt').toLowerCase()}?`,
   analyze: (v) => {
     const balance = n(v.balance)
-    const apr = n(v.apr) / 100
+    const apr = Math.min(n(v.apr), 100) / 100
     const cash = Math.min(n(v.availableCash), balance)
-    const minPay = Math.max(1, n(v.minPayment))
+    const minPay = n(v.minPayment)
 
-    // Interest if you keep paying only the minimum.
-    const months = Math.min(600, estimatePayoffMonths(balance, apr, minPay))
-    const interestIfMinimum = Math.max(0, minPay * months - balance)
-    // Guaranteed "return" from paying off = the APR you stop paying.
+    const payoff = payoffProjection(balance, apr, minPay)
+    // If the payment never amortizes, don't project 50 years of exploding
+    // compound interest as the headline — use one year of simple interest.
+    const interestIfMinimum = payoff.paysOff ? payoff.interest : balance * apr
     const investAlt = opportunityCost(cash, 1) // 1-year comparison of investing the cash
     const debtCostOneYear = cash * apr
 
-    const trueCost = interestIfMinimum
+    // Identity: trueCost is the full minimum-payment burden (principal + interest).
+    // Breakdown is those two parts and sums to the headline.
+    const breakdown = [
+      seg('base', 'Principal', balance, COLORS.base),
+      seg(
+        'interest',
+        payoff.paysOff ? 'Interest if you wait' : 'Interest in year 1 (balance grows)',
+        interestIfMinimum,
+        COLORS.interest,
+      ),
+    ]
+    const trueCost = segmentSum(breakdown)
     const strain = clamp(1 - (apr - ASSUMPTIONS.investmentReturn) / 0.15)
     const verdict = verdictFromScore(strain)
+    const payoffLabel = payoff.paysOff ? `${Math.round(payoff.months)} mo` : 'Never'
 
     return result({
       title: debt.buildTitle(v),
       categoryId: 'debt',
       trueCost,
       facePrice: balance,
-      costLabel: 'Interest if you wait',
+      costLabel: 'Total if you pay minimums',
       metrics: [
         { label: 'Guaranteed return', value: pct(apr), hint: 'by paying it off', emphasis: true },
         { label: 'Interest (minimums only)', value: fmt(interestIfMinimum) },
-        { label: 'Payoff time', value: `${Math.round(months)} mo`, hint: 'at minimum payments' },
+        {
+          label: 'Payoff time',
+          value: payoffLabel,
+          hint: payoff.paysOff ? 'at minimum payments' : 'payment does not cover interest',
+        },
         { label: 'If invested instead', value: fmt(investAlt), hint: `${pct(ASSUMPTIONS.investmentReturn)} for 1y` },
       ],
-      breakdown: [
-        seg('base', 'Principal', balance, COLORS.base),
-        seg('interest', 'Interest avoided', interestIfMinimum, COLORS.interest),
-      ],
+      breakdown,
       verdict,
       verdictReason:
         verdict === 'worth'
@@ -368,12 +396,14 @@ const debt: CategoryConfig = {
             : `At ${pct(apr)} this debt is cheap. Investing the cash is likely to come out ahead over time.`,
       insights: [
         `Every dollar toward this debt "earns" a guaranteed ${pct(apr)}. Investing has no such guarantee.`,
-        `Paying minimums only, you'd hand over ${fmt(interestIfMinimum)} in interest over ${Math.round(months)} months.`,
+        payoff.paysOff
+          ? `Paying minimums only, you'd hand over ${fmt(interestIfMinimum)} in interest over ${Math.round(payoff.months)} months.`
+          : `The minimum payment is too low to cover interest, so the balance never pays off. Interest in the first year alone is ${fmt(interestIfMinimum)}.`,
         `Paying it off frees up ${fmt(minPay)} a month for future goals.`,
       ],
       whatIfs: [
-        makeWhatIf('half', 'Pay half now', 'Knock down the balance, invest the rest.', interestIfMinimum * 0.5, trueCost, strain + 0.05),
-        makeWhatIf('invest', 'Invest it all instead', `Put the ${fmt(cash)} in an index fund.`, interestIfMinimum + debtCostOneYear - investAlt, trueCost, strain + 0.2),
+        makeWhatIf('half', 'Pay half now', 'Knock down the balance, invest the rest.', trueCost * 0.5, trueCost, strain + 0.05),
+        makeWhatIf('invest', 'Invest it all instead', `Put the ${fmt(cash)} in an index fund.`, trueCost + debtCostOneYear - investAlt, trueCost, strain + 0.2),
       ],
     })
   },
@@ -394,13 +424,13 @@ const job: CategoryConfig = {
   ],
   fields: [
     { id: 'item', label: 'New role', type: 'text', step: 1, group: 0, defaultValue: 'Product Analyst', placeholder: 'e.g. Product Analyst' },
-    { id: 'newSalary', label: 'New salary', type: 'currency', step: 1000, group: 0, defaultValue: 78000 },
-    { id: 'currentSalary', label: 'Current salary', type: 'currency', step: 1000, group: 0, defaultValue: 68000 },
-    { id: 'newBenefits', label: 'New benefits value', type: 'currency', step: 500, group: 0, defaultValue: 8000, suffix: '/yr' },
-    { id: 'currentBenefits', label: 'Current benefits value', type: 'currency', step: 500, group: 0, defaultValue: 11000, suffix: '/yr' },
-    { id: 'newCommute', label: 'New weekly commute', type: 'hours', step: 1, group: 1, defaultValue: 8, suffix: 'hrs/wk' },
-    { id: 'currentCommute', label: 'Current weekly commute', type: 'hours', step: 1, group: 1, defaultValue: 2, suffix: 'hrs/wk' },
-    { id: 'relocation', label: 'Relocation / switching cost', type: 'currency', step: 250, group: 1, defaultValue: 3000, optional: true },
+    { id: 'newSalary', label: 'New salary', type: 'currency', step: 1000, group: 0, defaultValue: 78000, min: 0 },
+    { id: 'currentSalary', label: 'Current salary', type: 'currency', step: 1000, group: 0, defaultValue: 68000, min: 0 },
+    { id: 'newBenefits', label: 'New benefits value', type: 'currency', step: 500, group: 0, defaultValue: 8000, suffix: '/yr', min: 0 },
+    { id: 'currentBenefits', label: 'Current benefits value', type: 'currency', step: 500, group: 0, defaultValue: 11000, suffix: '/yr', min: 0 },
+    { id: 'newCommute', label: 'New weekly commute', type: 'hours', step: 1, group: 1, defaultValue: 8, suffix: 'hrs/wk', min: 0, max: 80 },
+    { id: 'currentCommute', label: 'Current weekly commute', type: 'hours', step: 1, group: 1, defaultValue: 2, suffix: 'hrs/wk', min: 0, max: 80 },
+    { id: 'relocation', label: 'Relocation / switching cost', type: 'currency', step: 250, group: 1, defaultValue: 3000, optional: true, min: 0 },
   ],
   buildTitle: (v) => `Is the ${s(v.item, 'new job')} actually better?`,
   analyze: (v) => {
@@ -412,56 +442,92 @@ const job: CategoryConfig = {
     const curCommute = n(v.currentCommute)
     const relocation = n(v.relocation)
 
-    const workHrs = 2080
-    const newHours = workHrs + newCommute * 50
-    const curHours = workHrs + curCommute * 50
+    const workWeeks = ASSUMPTIONS.workWeeksPerYear
+    const workHrs = workWeeks * ASSUMPTIONS.weeklyWorkHours
+    const newHours = Math.max(1, workHrs + newCommute * workWeeks)
+    const curHours = Math.max(1, workHrs + curCommute * workWeeks)
     const newComp = newSalary + newBen
     const curComp = currentSalary + curBen
     const newEffective = newComp / newHours
     const curEffective = curComp / curHours
 
-    const annualGain = newComp - curComp - relocation / 3 // amortize switching cost over 3 years
+    const extraCommuteHours = (newCommute - curCommute) * workWeeks
+    const commuteCost = extraCommuteHours * curEffective
+    const switchingAnnual = relocation / 3
+    const cashGain = newComp - curComp
+    // Net annual change: compensation delta, extra commute at the current
+    // effective wage, and switching cost amortized over 3 years.
+    const annualGain = cashGain - commuteCost - switchingAnnual
     const trueCost = Math.abs(annualGain)
 
-    const effGain = (newEffective - curEffective) / curEffective
+    const effGain = curEffective > 0 ? (newEffective - curEffective) / curEffective : 0
     const strain = clamp(0.5 - effGain * 2)
     const verdict = verdictFromScore(strain)
+
+    const salaryDelta = newSalary - currentSalary
+    const benDelta = newBen - curBen
+    // Identity: headline is |net annual change|. Breakdown shows the same
+    // drivers as absolute amounts; they do not partition the headline (a raise
+    // and a longer commute are not two slices of one net figure).
+    const breakdown = [
+      seg('base', salaryDelta >= 0 ? 'Salary increase' : 'Salary decrease', Math.abs(salaryDelta), COLORS.base),
+      seg('operating', benDelta >= 0 ? 'Benefits increase' : 'Benefits given up', Math.abs(benDelta), COLORS.operating),
+      seg(
+        'opportunity',
+        extraCommuteHours >= 0 ? 'Extra commute (time value)' : 'Commute time saved',
+        Math.abs(commuteCost),
+        COLORS.opportunity,
+      ),
+      seg('other', 'Switching cost (per year)', switchingAnnual, COLORS.other),
+    ]
+
+    const remoteCommute = newCommute / 2
+    const remoteHours = Math.max(1, workHrs + remoteCommute * workWeeks)
+    const remoteEffective = newComp / remoteHours
+    const remoteGain = cashGain - (remoteCommute - curCommute) * workWeeks * curEffective - switchingAnnual
+    const counterComp = newComp + 6000
+    const counterEffective = counterComp / newHours
+    const counterGain = cashGain + 6000 - commuteCost - switchingAnnual
+    const wageStrain = (next: number, cur: number) =>
+      clamp(0.5 - (cur > 0 ? (next - cur) / cur : 0) * 2)
 
     return result({
       title: job.buildTitle(v),
       categoryId: 'job',
       trueCost,
-      facePrice: newSalary - currentSalary,
+      facePrice: 0,
       costLabel: annualGain >= 0 ? 'Real annual gain' : 'Real annual loss',
       metrics: [
         { label: 'New effective wage', value: `${fmt(newEffective)}/hr`, emphasis: true, hint: 'after commute' },
         { label: 'Current effective wage', value: `${fmt(curEffective)}/hr` },
-        { label: 'Total comp change', value: fmt(newComp - curComp) },
-        { label: 'Added commute', value: `${Math.round((newCommute - curCommute) * 50)} hrs/yr` },
+        { label: 'Total comp change', value: fmt(cashGain) },
+        {
+          label: extraCommuteHours >= 0 ? 'Added commute' : 'Commute saved',
+          value: `${Math.abs(Math.round(extraCommuteHours))} hrs/yr`,
+        },
       ],
-      breakdown: [
-        seg('base', 'Salary increase', Math.max(0, newSalary - currentSalary), COLORS.base),
-        seg('operating', 'Benefits change', Math.max(0, newBen - curBen), COLORS.operating),
-        seg('opportunity', 'Extra commute (time value)', Math.max(0, (newCommute - curCommute) * 50 * curEffective), COLORS.opportunity),
-        seg('other', 'Switching cost', relocation, COLORS.other),
-      ],
+      breakdown,
       verdict,
       verdictReason:
         verdict === 'worth'
-          ? `Even after the longer commute, your effective wage rises to ${fmt(newEffective)}/hr. This is a real upgrade.`
+          ? extraCommuteHours > 0
+            ? `Even after the longer commute, your effective wage rises to ${fmt(newEffective)}/hr. This is a real upgrade.`
+            : `Your effective wage rises to ${fmt(newEffective)}/hr. This is a real upgrade.`
           : verdict === 'consider'
-            ? `The raise is real but a longer commute and weaker benefits eat into it. Your effective wage barely moves.`
-            : `Once you count the extra commute and lost benefits, your effective hourly pay actually drops.`,
+            ? `The raise is real but commute and benefits eat into it. Your effective wage barely moves.`
+            : `Once you count commute time and benefits, your effective hourly pay actually drops.`,
       insights: [
-        `Your time matters: the new role adds ${Math.round((newCommute - curCommute) * 50)} commuting hours a year.`,
+        extraCommuteHours === 0
+          ? 'Commute time is unchanged, so effective wage tracks total compensation.'
+          : `Your time matters: the new role ${extraCommuteHours > 0 ? 'adds' : 'saves'} ${Math.abs(Math.round(extraCommuteHours))} commuting hours a year.`,
         `On an effective-wage basis you go from ${fmt(curEffective)}/hr to ${fmt(newEffective)}/hr.`,
         curBen > newBen
           ? `Watch the benefits: you'd give up ${fmt(curBen - newBen)}/yr in non-salary value.`
           : `Better benefits add ${fmt(newBen - curBen)}/yr of hidden value.`,
       ],
       whatIfs: [
-        makeWhatIf('remote', 'Negotiate remote days', 'Cut the new commute in half.', Math.abs(newComp - curComp - relocation / 3), trueCost, strain - 0.15),
-        makeWhatIf('counter', 'Counter for +$6k', 'Push the new salary higher.', Math.abs(newComp + 6000 - curComp - relocation / 3), trueCost, strain - 0.2),
+        makeWhatIf('remote', 'Negotiate remote days', 'Cut the new commute in half.', Math.abs(remoteGain), trueCost, wageStrain(remoteEffective, curEffective)),
+        makeWhatIf('counter', 'Counter for +$6k', 'Push the new salary higher.', Math.abs(counterGain), trueCost, wageStrain(counterEffective, curEffective)),
       ],
     })
   },
@@ -482,29 +548,31 @@ const college: CategoryConfig = {
   ],
   fields: [
     { id: 'item', label: 'Program', type: 'text', step: 1, group: 0, defaultValue: "Master's degree", placeholder: 'e.g. Coding bootcamp' },
-    { id: 'cost', label: 'Total net cost', type: 'currency', step: 1000, group: 0, defaultValue: 42000, help: 'Tuition + living, minus aid.' },
-    { id: 'years', label: 'Program length', type: 'number', step: 1, group: 0, defaultValue: 2, suffix: 'years' },
-    { id: 'lostWages', label: 'Wages given up per year', type: 'currency', step: 1000, group: 0, defaultValue: 15000, optional: true, help: 'If you\'ll work less while studying.' },
-    { id: 'salaryBump', label: 'Expected salary increase', type: 'currency', step: 1000, group: 1, defaultValue: 14000, suffix: '/yr' },
-    { id: 'workingYears', label: 'Years you\'ll benefit', type: 'number', step: 1, group: 1, defaultValue: 20, suffix: 'years' },
+    { id: 'cost', label: 'Total net cost', type: 'currency', step: 1000, group: 0, defaultValue: 42000, min: 0, help: 'Tuition + living, minus aid.' },
+    { id: 'years', label: 'Program length', type: 'number', step: 1, group: 0, defaultValue: 2, suffix: 'years', min: 0.5, max: 20 },
+    { id: 'lostWages', label: 'Wages given up per year', type: 'currency', step: 1000, group: 0, defaultValue: 15000, optional: true, min: 0, help: 'If you\'ll work less while studying.' },
+    { id: 'salaryBump', label: 'Expected salary increase', type: 'currency', step: 1000, group: 1, defaultValue: 14000, suffix: '/yr', min: 0 },
+    { id: 'workingYears', label: 'Years you\'ll benefit', type: 'number', step: 1, group: 1, defaultValue: 20, suffix: 'years', min: 1, max: 50 },
   ],
   buildTitle: (v) => `Is the ${s(v.item, 'program')} worth it?`,
   analyze: (v) => {
     const cost = n(v.cost)
-    const years = Math.max(0.5, n(v.years))
+    const years = yrs(v.years, 0.5, 20)
     const lostWages = n(v.lostWages) * years
     const bump = n(v.salaryBump)
-    const workingYears = Math.max(1, n(v.workingYears))
+    const workingYears = yrs(v.workingYears, 1, 50)
 
     const totalInvestment = cost + lostWages
     const oc = opportunityCost(totalInvestment, workingYears / 2)
+    // Identity: trueCost = tuition + lost wages + opportunity cost; breakdown sums to it.
+    // Payback is simple/undiscounted (cash outlay / bump) and ignores opportunity cost.
     const trueCost = totalInvestment + oc
-    // Discount future salary bumps modestly.
     const grossReturn = bump * workingYears
     const paybackYears = bump > 0 ? totalInvestment / bump : Infinity
     const netReturn = grossReturn - totalInvestment
+    const paybackLabel = formatPaybackYears(paybackYears)
 
-    const strain = clamp(paybackYears / 12)
+    const strain = clamp(Number.isFinite(paybackYears) ? paybackYears / 12 : 1)
     const verdict = verdictFromScore(strain)
 
     return result({
@@ -514,7 +582,12 @@ const college: CategoryConfig = {
       facePrice: cost,
       costLabel: 'Total investment',
       metrics: [
-        { label: 'Payback period', value: paybackYears === Infinity ? 'n/a' : `${paybackYears.toFixed(1)} yrs`, emphasis: true },
+        {
+          label: 'Payback period',
+          value: Number.isFinite(paybackYears) ? `${paybackYears.toFixed(1)} yrs` : 'never',
+          hint: 'cash outlay, before opportunity cost',
+          emphasis: true,
+        },
         { label: 'Lifetime salary gain', value: fmt(grossReturn), hint: `over ${workingYears}y` },
         { label: 'Wages given up', value: fmt(lostWages) },
         { label: 'Net lifetime return', value: fmt(netReturn) },
@@ -526,19 +599,23 @@ const college: CategoryConfig = {
       ],
       verdict,
       verdictReason:
-        verdict === 'worth'
-          ? `You'd recoup the cost in about ${paybackYears.toFixed(1)} years, then earn ${fmt(bump)}/yr on top for decades.`
-          : verdict === 'consider'
-            ? `The payoff is real but slow, roughly ${paybackYears.toFixed(1)} years to break even. Make sure the salary bump is reliable.`
-            : `The break-even is long (${paybackYears.toFixed(1)} years). The numbers only work if the salary increase is larger or the cost lower.`,
+        !Number.isFinite(paybackYears)
+          ? `With no expected salary increase, this program never pays back. The ${fmt(trueCost)} investment is all cost.`
+          : verdict === 'worth'
+            ? `You'd recoup the cash outlay in about ${paybackLabel}, then earn ${fmt(bump)}/yr on top for decades.`
+            : verdict === 'consider'
+              ? `The payoff is real but slow, roughly ${paybackLabel} to break even on tuition and lost wages. Make sure the salary bump is reliable.`
+              : `The break-even is long (${paybackLabel}). The numbers only work if the salary increase is larger or the cost lower.`,
       insights: [
         `Counting wages you'd give up, the true investment is ${fmt(totalInvestment)}, not just tuition.`,
+        Number.isFinite(paybackYears)
+          ? `Simple payback (tuition and lost wages, before the ${fmt(oc)} opportunity cost in the headline) is about ${paybackLabel}.`
+          : `Without a salary increase, simple payback never arrives — the headline is pure cost, including ${fmt(oc)} of opportunity cost.`,
         `A ${fmt(bump)}/yr raise over ${workingYears} years is ${fmt(grossReturn)} before discounting.`,
-        `Break-even lands around year ${Math.ceil(paybackYears)}.`,
       ],
       whatIfs: [
-        makeWhatIf('scholarship', 'Land 30% in aid', 'Cut net tuition by a third.', (cost * 0.7 + lostWages) + opportunityCost(cost * 0.7 + lostWages, workingYears / 2), trueCost, (((cost * 0.7 + lostWages) / bump)) / 12),
-        makeWhatIf('parttime', 'Study part-time', 'Keep working, no lost wages.', cost + opportunityCost(cost, workingYears / 2), trueCost, ((cost / bump)) / 12),
+        makeWhatIf('scholarship', 'Land 30% in aid', 'Cut net tuition by a third.', (cost * 0.7 + lostWages) + opportunityCost(cost * 0.7 + lostWages, workingYears / 2), trueCost, bump > 0 ? ((cost * 0.7 + lostWages) / bump) / 12 : 1),
+        makeWhatIf('parttime', 'Study part-time', 'Keep working, no lost wages.', cost + opportunityCost(cost, workingYears / 2), trueCost, bump > 0 ? (cost / bump) / 12 : 1),
       ],
     })
   },
@@ -569,7 +646,7 @@ const subscription: CategoryConfig = {
     const monthly = n(v.monthly)
     const uses = Math.max(0, n(v.usesPerMonth))
     const alt = n(v.perUseAlternative)
-    const years = Math.max(1, n(v.keepYears))
+    const years = yrs(v.keepYears)
 
     const annual = monthly * 12
     const total = annual * years
@@ -638,11 +715,11 @@ const transportation: CategoryConfig = {
   ],
   fields: [
     { id: 'item', label: 'Current option', type: 'text', step: 1, group: 0, defaultValue: 'Driving to campus', placeholder: 'e.g. Daily rideshare' },
-    { id: 'currentMonthly', label: 'Current monthly cost', type: 'currency', step: 10, group: 0, defaultValue: 420 },
-    { id: 'altMonthly', label: 'Alternative monthly cost', type: 'currency', step: 10, group: 1, defaultValue: 96, help: 'e.g. a transit pass.' },
-    { id: 'extraHoursWeekly', label: 'Extra time per week', type: 'hours', step: 0.5, group: 1, defaultValue: 3, suffix: 'hrs/wk' },
-    { id: 'hourlyIncome', label: 'Your hourly income', type: 'currency', step: 1, group: 1, defaultValue: 24 },
-    { id: 'years', label: 'Time horizon', type: 'number', step: 1, group: 1, defaultValue: 3, suffix: 'years' },
+    { id: 'currentMonthly', label: 'Current monthly cost', type: 'currency', step: 10, group: 0, defaultValue: 420, min: 0 },
+    { id: 'altMonthly', label: 'Alternative monthly cost', type: 'currency', step: 10, group: 1, defaultValue: 96, min: 0, help: 'e.g. a transit pass.' },
+    { id: 'extraHoursWeekly', label: 'Extra time per week', type: 'hours', step: 0.5, group: 1, defaultValue: 3, suffix: 'hrs/wk', min: 0, max: 80 },
+    { id: 'hourlyIncome', label: 'Your hourly income', type: 'currency', step: 1, group: 1, defaultValue: 24, min: 0 },
+    { id: 'years', label: 'Time horizon', type: 'number', step: 1, group: 1, defaultValue: 3, suffix: 'years', min: 1, max: 50 },
   ],
   buildTitle: (v) => `A smarter way than ${s(v.item, 'this commute').toLowerCase()}?`,
   analyze: (v) => {
@@ -650,13 +727,19 @@ const transportation: CategoryConfig = {
     const altMonthly = n(v.altMonthly)
     const extraHours = n(v.extraHoursWeekly)
     const hourly = n(v.hourlyIncome)
-    const years = Math.max(1, n(v.years))
+    const years = yrs(v.years, 1, 50)
 
-    const cashSavings = (current - altMonthly) * 12 * years
-    const timeCost = extraHours * 50 * years * hourly
+    const currentSpend = current * 12 * years
+    const altSpend = altMonthly * 12 * years
+    const cashSavings = currentSpend - altSpend
+    const timeCost = extraHours * ASSUMPTIONS.workWeeksPerYear * years * hourly
     const netSavings = cashSavings - timeCost
     const oc = opportunityCost(Math.max(0, cashSavings), years / 2)
-    const trueCost = current * 12 * years // true cost of the CURRENT option over the horizon
+
+    // Identity: trueCost is the current option's cash cost over the horizon.
+    // Breakdown is that same cash — not current + alternative + time (you pick one option).
+    const breakdown = [seg('base', 'Current spend', currentSpend, COLORS.base)]
+    const trueCost = segmentSum(breakdown)
 
     // Worth = switching is a good idea.
     const strain = clamp(0.5 - netSavings / (Math.abs(cashSavings) + 1))
@@ -674,11 +757,7 @@ const transportation: CategoryConfig = {
         { label: 'Net benefit', value: fmt(netSavings) },
         { label: 'Plus growth if invested', value: fmt(oc) },
       ],
-      breakdown: [
-        seg('base', 'Current spend', current * 12 * years, COLORS.base),
-        seg('operating', 'Alternative spend', altMonthly * 12 * years, COLORS.operating),
-        seg('opportunity', 'Time cost of switching', timeCost, COLORS.opportunity),
-      ],
+      breakdown,
       verdict,
       verdictReason:
         verdict === 'worth'
@@ -687,7 +766,7 @@ const transportation: CategoryConfig = {
             ? `The cash savings (${fmt(cashSavings)}) and your time cost (${fmt(timeCost)}) roughly cancel out. It's a lifestyle call.`
             : `The extra time isn't worth it. The ${fmt(timeCost)} value of your hours outweighs the ${fmt(cashSavings)} you'd save.`,
       insights: [
-        `Your current option costs ${fmt(current * 12)} a year, or ${fmt(current * 12 * years)} over ${years} years.`,
+        `Your current option costs ${fmt(current * 12)} a year, or ${fmt(currentSpend)} over ${years} years.`,
         `The alternative adds ${extraHours} hrs/week; at ${fmt(hourly)}/hr that's ${fmt(timeCost)} of your time.`,
         netSavings > 0
           ? `Even valuing your time, switching nets ${fmt(netSavings)}.`
@@ -725,7 +804,7 @@ const investing: CategoryConfig = {
   analyze: (v) => {
     const initial = n(v.initial)
     const monthly = n(v.monthly)
-    const years = Math.max(1, n(v.years))
+    const years = yrs(v.years)
     const rate = n(v.annualReturn) / 100
 
     const months = years * 12
@@ -776,6 +855,7 @@ const investing: CategoryConfig = {
 // Helpers
 // ---------------------------------------------------------------------------
 function fmt(amount: number): string {
+  if (!Number.isFinite(amount)) return 'n/a'
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -784,18 +864,8 @@ function fmt(amount: number): string {
 }
 
 function pct(v: number): string {
+  if (!Number.isFinite(v)) return 'n/a'
   return `${(v * 100).toFixed(v * 100 % 1 === 0 ? 0 : 1)}%`
-}
-
-function estimatePayoffMonths(balance: number, apr: number, payment: number): number {
-  const r = apr / 12
-  let bal = balance
-  let months = 0
-  while (bal > 0 && months < 600) {
-    bal = bal * (1 + r) - payment
-    months++
-  }
-  return months
 }
 
 function makeWhatIf(
