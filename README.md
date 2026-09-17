@@ -53,6 +53,18 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run start` | Serve the production build |
 
+## Deploy
+
+Vercel is the recommended host for this Next.js app. No production URL is documented here.
+
+Set these on the Vercel project (same names as `.env.local`):
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL` — the production origin, not `http://localhost:3000`. Auth email links are built from this value.
+
+Use the same Supabase project whose migration you applied. Add that production origin to the Supabase Auth redirect allow-list so confirmation and reset links can return to the app.
+
 ## Known limits
 
 - **Confirm email** is a Supabase project toggle. With it on, sign-up lands on `/verify-email` until the link is opened; with it off, sign-up creates a session immediately.
