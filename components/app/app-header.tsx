@@ -59,7 +59,9 @@ export function AppHeader() {
             <Bell />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <p className="px-2 py-8 text-center text-sm text-muted-foreground">
               No notifications yet.
@@ -79,9 +81,8 @@ export function AppHeader() {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              <DropdownMenuLabel>Account</DropdownMenuLabel>
               <DropdownMenuItem render={<Link href="/app/profile" />}>
                 <User />
                 Profile
@@ -92,14 +93,16 @@ export function AppHeader() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <form action={signOut}>
-                <DropdownMenuItem nativeButton={false} render={<button type="submit" />}>
-                  <LogOut />
-                  Log out
-                </DropdownMenuItem>
-              </form>
-            </DropdownMenuGroup>
+            <form action={signOut}>
+              <DropdownMenuItem
+                nativeButton={true}
+                closeOnClick={false}
+                render={<button type="submit" />}
+              >
+                <LogOut />
+                Log out
+              </DropdownMenuItem>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
