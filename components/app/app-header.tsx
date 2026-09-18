@@ -95,7 +95,7 @@ export function AppHeader() {
             <DropdownMenuSeparator />
             <form action={signOut}>
               <DropdownMenuItem
-                nativeButton={false}
+                nativeButton={true}
                 closeOnClick={false}
                 render={<button type="submit" />}
               >
