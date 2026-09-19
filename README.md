@@ -50,8 +50,11 @@ npm run dev
 | --- | --- |
 | `npm run dev` | Dev server |
 | `npm run typecheck` | Type check without emitting |
+| `npm test` | Unit tests (economics + analyzer identities) |
 | `npm run build` | Production build |
 | `npm run start` | Serve the production build |
+
+GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, `npm run typecheck`, and `npm test` on pull requests and pushes to `main` (Node 22).
 
 ## Deploy
 
@@ -69,5 +72,5 @@ Use the same Supabase project whose migration you applied. Add that production o
 
 - **Confirm email** is a Supabase project toggle. With it on, sign-up lands on `/verify-email` until the link is opened; with it off, sign-up creates a session immediately.
 - The dashboard **Weekly economics** chart is labeled **Sample**. It is illustrative, not this account’s spending.
-- **Not built yet:** OAuth, AI, payments, public share links, CI.
+- **Not built yet:** OAuth, AI, payments, public share links.
 - Category results use **nominal dollars**. An inflation helper exists in `lib/economics.ts` but is unused.
