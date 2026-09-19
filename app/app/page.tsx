@@ -2,7 +2,6 @@ import { FinancialSnapshot } from '@/components/dashboard/financial-snapshot'
 import { OpportunityCard } from '@/components/dashboard/opportunity-card'
 import { RecentDecisions } from '@/components/dashboard/recent-decisions'
 import { ScoreCard } from '@/components/dashboard/score-card'
-import { WeeklyEconomics } from '@/components/dashboard/weekly-economics'
 import { listSavedDecisions } from '@/lib/decisions'
 
 /** The greeting depends on request time, so this page can't be prerendered. */
@@ -26,12 +25,7 @@ export default async function DashboardPage() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <ScoreCard greeting={getGreeting()} />
       <FinancialSnapshot />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <OpportunityCard />
-        <WeeklyEconomics />
-      </div>
-
+      <OpportunityCard />
       <RecentDecisions decisions={decisions} error={error} />
     </div>
   )

@@ -5,7 +5,7 @@ const STEPS = [
   },
   {
     title: 'WorthIt does the economics',
-    body: 'It layers in opportunity cost, compounding, depreciation, inflation, and the work time the money represents.',
+    body: 'It layers in opportunity cost, compounding, depreciation, and the work time the money represents.',
   },
   {
     title: 'Get a clear verdict',

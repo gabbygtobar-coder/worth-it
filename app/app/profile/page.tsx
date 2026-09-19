@@ -1,5 +1,4 @@
 import { PageHeading } from '@/components/app/page-heading'
-import { ScoreRing } from '@/components/app/score-ring'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -24,7 +23,7 @@ const ASSUMPTIONS = [
   {
     label: 'Assumed inflation',
     value: '3% / yr',
-    help: 'Used when comparing costs across future years.',
+    help: 'Not applied in formulas yet. Category results currently use nominal dollars.',
   },
 ]
 
@@ -54,7 +53,6 @@ export default function ProfilePage() {
               No personal totals or economic score are stored yet.
             </p>
           </div>
-          <ScoreRing size={76} />
         </CardContent>
       </Card>
 

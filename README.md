@@ -71,6 +71,5 @@ Use the same Supabase project whose migration you applied. Add that production o
 ## Known limits
 
 - **Confirm email** is a Supabase project toggle. With it on, sign-up lands on `/verify-email` until the link is opened; with it off, sign-up creates a session immediately.
-- The dashboard **Weekly economics** chart is labeled **Sample**. It is illustrative, not this account’s spending.
 - **Not built yet:** OAuth, AI, payments, public share links.
 - Category results use **nominal dollars**. An inflation helper exists in `lib/economics.ts` but is unused.
