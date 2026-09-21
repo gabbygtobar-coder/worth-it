@@ -23,7 +23,7 @@ Category math lives in TypeScript (`lib/economics.ts`, `lib/categories.ts`). The
 
 ## Setup
 
-Node 20.9+ is required. A Supabase project is required only for accounts and saved decisions.
+Node 22+ is required. A Supabase project is required only for accounts and saved decisions.
 
 ```bash
 git clone https://github.com/gabbygtobar-coder/worth-it.git
@@ -54,7 +54,7 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run start` | Serve the production build |
 
-GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, `npm run typecheck`, and `npm test` on pull requests and pushes to `main` (Node 22).
+GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, `npm run typecheck`, `npm test`, and `npm run build` on pull requests and pushes to `main` (Node 22).
 
 ## Deploy
 
